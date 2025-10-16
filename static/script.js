@@ -1,3 +1,4 @@
+> $hoovalov:
 // Синхронизация ползунка и числового поля
 document.addEventListener('DOMContentLoaded', function() {
     const lengthSlider = document.getElementById('lengthSlider');
@@ -127,7 +128,9 @@ async function checkPasswordStrength(password) {
 
 function copyPassword() {
     const passwordField = document.getElementById('passwordOutput');
-    if (passwordField.value) {
+
+> $hoovalov:
+if (passwordField.value) {
         passwordField.select();
         document.execCommand('copy');
 
@@ -160,5 +163,83 @@ function showError(message) {
     output.value = 'Ошибка!';
     output.style.color = '#ef4444';
 
+    alert(message);
+}
+
+async function savePassword(title = 'Без названия') {
+    const password = document.getElementById('passwordOutput').value;
+    const strength = document.getElementById('strengthText').textContent;
+
+    if (!password) {
+        showError('Сначала сгенерируйте пароль');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/save_password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                password: password,
+                strength: strength
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        showSuccess('Пароль сохранен!');
+
+    } catch (error) {
+        console.error('Error:', error);
+        showError('Ошибка при сохранении пароля: ' + error.message);
+    }
+}
+
+async function deletePassword(passwordId) {
+    if (!confirm('Вы уверены, что хотите удалить этот пароль?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(/api/delete_password/${passwordId}, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        showSuccess('Пароль удален!');
+        // Перезагружаем страницу чтобы обновить список
+        setTimeout(() => location.reload(), 1000);
+
+    } catch (error) {
+        console.error('Error:', error);
+        showError('Ошибка при удалении пароля: ' + error.message);
+    }
+}
+
+function showSaveDialog() {
+    const title = prompt('Введите название для пароля:', 'Мой пароль');
+    if (title !== null) {
+        savePassword(title);
+    }
+}
+
+function showSuccess(message) {
+    // Можно добавить красивые уведомления вместо alert
+    alert(message);
+}
+
+function showError(message) {
     alert(message);
 }
